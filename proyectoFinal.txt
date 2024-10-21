@@ -1,0 +1,117 @@
+JMP boot
+
+stackTop    EQU 0xFF		; Inicializar el SP
+txtDisplay1 EQU 0x2E0		; Direcciones de salida del texto
+txtDisplay2 EQU 0x2E7
+txtDisplay3 EQU 0x2F0
+txtDisplay4 EQU 0x2F7
+
+; Alerta de temperatura
+temp_alert:
+	DB "ALTA T"
+    DB 0
+    
+; Alerta de velocidad
+vel_alert:
+	DB "BAJA V"
+    DB 0 
+    
+; Alerta de flujo de aire
+flow_alert:
+	DB "BAJO F"
+	DB 0
+
+; Alerta de presion
+press_alert:
+    DB "BAJA P"
+    DB 0
+
+boot:
+    MOV SP, stackTop		; Configurar SP
+
+	CALL .check_temp		; Verificación del sensor de temperatura
+    CALL .check_velocity	; Verificación del sensor de velocidad
+    CALL .check_flow		; Verificación del sensor de flujo de aire	
+    CALL .check_pressure	; Verificación del sensor de presión
+
+    CALL .fin
+
+; Verificación del sensor de temperatura
+.check_temp:
+	MOV A, 100				; Sensor de temperatura (valor = 100)
+    MOV B, 90				; Umbral de temperatura (valor = 90)
+
+    CMP A, B
+    JAE .temp_alert			; Si es mayor o igual, llamar a la alerta de temperatura
+    RET
+
+; Verificación del sensor de velocidad
+.check_velocity:
+    MOV A, 50				; Velocidad
+    MOV B, 40				; Umbral de velocidad
+
+    CMP A, B
+    JB .vel_alert			; Si es menor, llamar a la alerta de velocidad
+    RET
+
+; Verificación del sensor de flujo de aire
+.check_flow:
+    MOV A, 15				; Flujo de aire
+    MOV B, 20				; Umbral de flujo
+
+    CMP A, B
+    JB .flow_alert			; Si es menor, llamar a la alerta de flujo
+    RET
+
+; Verificación del sensor de presión
+.check_pressure:
+    MOV A, 41				; Presión
+    MOV B, 45				; Umbral de presión
+
+    CMP A, B
+    JB .press_alert			; Si la presión es menor al umbral, disparar la alerta
+    RET
+
+.fin:
+    HLT						; Detener ejecución si no hay alertas
+
+.temp_alert:
+    MOV C, temp_alert		; Apuntar al mensaje de alerta de temperatura
+    MOV D, txtDisplay1		; Apuntar a la salida
+    CALL print
+    RET						; Regresar después de imprimir la alerta
+
+.vel_alert:
+    MOV C, vel_alert		; Apuntar al mensaje de alerta de velocidad
+    MOV D, txtDisplay2		; Apuntar a la salida
+    CALL print
+    RET						; Regresar después de imprimir la alerta
+
+.flow_alert:
+    MOV C, flow_alert		; Apuntar al mensaje de alerta de flujo
+    MOV D, txtDisplay3		; Apuntar a la salida
+    CALL print
+    RET						; Regresar después de imprimir la alerta
+
+.press_alert:
+    MOV C, press_alert		; Apuntar al mensaje de alerta de presión
+    MOV D, txtDisplay4		; Apuntar a la salida
+    CALL print
+    RET 					; Regresar después de imprimir la alerta
+
+print:						; Función para imprimir cadena
+    PUSH A					; Guardar el valor de A
+    PUSH B					; Guardar el valor de B
+    MOV B, 0				; Inicializar B
+
+.loop:
+    MOVB AL, [C]			; Obtener carácter de la cadena
+    MOVB [D], AL			; Escribir carácter a la salida
+    INC C					; Avanzar al siguiente carácter de la cadena
+    INC D					; Avanzar al siguiente lugar de salida
+    CMPB BL, [C]			; Verificar si es el final de la cadena (valor 0)
+    JNZ .loop				; Repetir si no es el final
+
+    POP B					; Restaurar el valor de B
+    POP A					; Restaurar el valor de A
+    RET						; Retornar después de imprimir la cadena
